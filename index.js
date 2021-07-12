@@ -96,9 +96,9 @@ const storeToken = async (code) => {
  * @returns {Promise}
  */
 const list = async (naturalInfo, options) => {
-  const { from, to, showId } = options;
+  const { from, to, showId, calendarId } = options;
   const params = {
-    calendarId: conf.CALENDAR_ID,
+    calendarId: calendarId,
     singleEvents: true,
     orderBy: conf.LIST_ORDER
   };
@@ -127,10 +127,10 @@ const list = async (naturalInfo, options) => {
   const calendar = await getClient();
   const { items: events } = await promisify(calendar.events.list)(params);
   if (events.length === 0) {
-    console.log(`No upcoming events found (${params.timeMin} ~ ${params.timeMax || ''})`);
+    //console.log(`No upcoming events found (${params.timeMin} ~ ${params.timeMax || ''})`);
     return;
   }
-  console.log(`Upcoming events (${params.timeMin} ~ ${params.timeMax || ''})`);
+  //console.log(`Upcoming events (${params.timeMin} ~ ${params.timeMax || ''})`);
   events.forEach(event => {
     let start;
     if (event.start.dateTime) {
@@ -144,6 +144,20 @@ const list = async (naturalInfo, options) => {
       console.log(` ${start} - ${chalk.bold(event.summary)}`);
     }
   });
+};
+
+/**
+ * List Calendars
+ * @returns {array}
+ */
+const listCalendars = async () => {
+
+  const calendar = await getClient();
+  const { items: calendars } = await promisify(calendar.calendarList.list)();
+  if (calendars.length === 0) {
+    return;
+  }
+  return calendars.map((calendar) => {return calendar.id}); 
 };
 
 /**
@@ -260,9 +274,26 @@ const bulk = async (eventsPath) => {
       const params = {
         from: argv.from || argv.f,
         to: argv.to || argv.t,
-        showId: argv['show-id'] || argv.i
+        showId: argv['show-id'] || argv.i,
+        calendarId: argv['calendar-id'] || argv.c
       };
-      await list(naturalInfo, params);
+      if (!params.calendarId) {
+        let calendars = await listCalendars();
+        calendars.forEach(async (calendarId) => {
+          let params_ = params;
+          params_.calendarId = calendarId;
+          try {
+            await list(naturalInfo, params_);  
+          }
+          catch (err) {
+            ;  /* some calendars are not queryable */
+          }
+          
+        })
+      }
+      else {
+        await list(naturalInfo, params);
+      }
       break;
     }
     case 'insert': {
