@@ -125,6 +125,16 @@ Or with specific ISO dates:
 $ gcal list -f 2017-03-23 -t 2017-03-27
 ```
 
+It is possible to specify which calendar to use
+```
+$ gcal list -c 'primary'
+```
+
+Otherwise, it will query from all calendars that the account has 
+```
+$ gcal list
+```
+
 ### Insert
 
 Insert events using natural language:
